@@ -1,0 +1,217 @@
+// Prisma schema for Dulce Tentación backend
+// Database: MySQL (config via DATABASE_URL env var)
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+  name          String
+  email         String    @unique
+  password      String
+  role          Role
+  isActive      Boolean   @default(true)
+  shifts        Shift[]
+  sales         Sale[]    @relation("SaleCajera")
+  payrolls      Payroll[]
+  createdShifts Shift[]   @relation("ShiftCreatedBy")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+enum Role {
+  ADMIN
+  CASHIER
+}
+
+model Product {
+  id          Int               @id @default(autoincrement())
+  name        String
+  category    String?
+  description String?
+  isActive    Boolean           @default(true)
+  variants    ProductVariant[]
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+}
+
+model ProductVariant {
+  id          Int          @id @default(autoincrement())
+  product     Product      @relation(fields: [productId], references: [id])
+  productId   Int
+  name        String
+  price       Decimal      @db.Decimal(10, 2)
+  currency    String       @default("COP")
+  isActive    Boolean      @default(true)
+  validFrom   DateTime?    @default(now())
+  validTo     DateTime?
+  salesItems  SaleItem[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+
+model Supplier {
+  id        Int        @id @default(autoincrement())
+  name      String
+  contact   String?
+  phone     String?
+  email     String?
+  purchases Purchase[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model Purchase {
+  id          Int                 @id @default(autoincrement())
+  supplier    Supplier?           @relation(fields: [supplierId], references: [id])
+  supplierId  Int?
+  date        DateTime
+  reference   String?
+  total       Decimal             @db.Decimal(12, 2) @default(0)
+  notes       String?
+  items       PurchaseItem[]
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+}
+
+model PurchaseItem {
+  id          Int       @id @default(autoincrement())
+  purchase    Purchase  @relation(fields: [purchaseId], references: [id])
+  purchaseId  Int
+  description String    @default("Item")
+  category    String?
+  quantity    Decimal   @db.Decimal(12, 3)
+  unit        String?
+  unitCost    Decimal   @db.Decimal(12, 2)
+  createdAt   DateTime  @default(now())
+}
+
+
+model Sale {
+  id          Int         @id @default(autoincrement())
+  date        DateTime    @default(now())
+  total       Decimal     @db.Decimal(12, 2)
+  discount    Decimal     @db.Decimal(12, 2) @default(0)
+  couponCode  String?
+  promoDescription String?
+  paymentType PaymentType
+  notes       String?
+  cashier     User?       @relation("SaleCajera", fields: [cashierId], references: [id])
+  cashierId   Int?
+  shift       Shift?      @relation(fields: [shiftId], references: [id])
+  shiftId     Int?
+  items       SaleItem[]
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+enum PaymentType {
+  CASH
+  CARD
+  TRANSFER
+  MIXED
+}
+
+model SaleItem {
+  id        Int            @id @default(autoincrement())
+  sale      Sale           @relation(fields: [saleId], references: [id])
+  saleId    Int
+  variant   ProductVariant @relation(fields: [variantId], references: [id])
+  variantId Int
+  quantity  Int
+  unitPrice Decimal        @db.Decimal(10, 2)
+  total     Decimal        @db.Decimal(12, 2)
+  createdAt DateTime       @default(now())
+}
+
+model FixedExpense {
+  id          Int       @id @default(autoincrement())
+  month       DateTime  // primeros días del mes para identificar período
+  category    String
+  amount      Decimal   @db.Decimal(12, 2)
+  description String?
+  attachment  String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Shift {
+  id        Int           @id @default(autoincrement())
+  user      User          @relation(fields: [userId], references: [id])
+  userId    Int
+  date      DateTime
+  startTime DateTime
+  endTime   DateTime
+  season    Season        @default(REGULAR)
+  status    ShiftStatus   @default(SCHEDULED)
+  checkInAt DateTime?
+  checkOutAt DateTime?
+  notes     String?
+  sales     Sale[]
+  payrolls  Payroll[]
+  createdBy User?         @relation("ShiftCreatedBy", fields: [createdById], references: [id])
+  createdById Int?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+enum ShiftStatus {
+  SCHEDULED
+  COMPLETED
+  ABSENT
+}
+
+enum Season {
+  WEEKDAY
+  WEEKEND
+  HIGH
+  HOLIDAY
+  REGULAR
+}
+
+model Payroll {
+  id          Int       @id @default(autoincrement())
+  shift       Shift?    @relation(fields: [shiftId], references: [id])
+  shiftId     Int?
+  user        User      @relation(fields: [userId], references: [id])
+  userId      Int
+  periodMonth DateTime
+  amount      Decimal   @db.Decimal(12, 2)
+  method      PayrollMethod
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model SalesGoal {
+  id          Int      @id @default(autoincrement())
+  date        DateTime
+  target      Decimal  @db.Decimal(12, 2)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum PayrollMethod {
+  CASH
+  TRANSFER
+  OTHER
+}
+
+model MonthlyClosure {
+  id            Int      @id @default(autoincrement())
+  month         DateTime @unique
+  salesTotal    Decimal  @db.Decimal(12, 2)
+  purchaseTotal Decimal  @db.Decimal(12, 2)
+  expensesTotal Decimal  @db.Decimal(12, 2)
+  payrollTotal  Decimal  @db.Decimal(12, 2)
+  notes         String?
+  createdAt     DateTime @default(now())
+}
