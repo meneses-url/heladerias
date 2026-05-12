@@ -1,22 +1,72 @@
 <section class="flex min-h-screen items-center justify-center bg-gradient-to-br from-amber-50 via-rose-50 to-orange-100 px-6">
-  <div class="w-full max-w-md rounded-3xl border border-amber-100 bg-white/90 p-8 shadow-xl">
+  <div class="w-full max-w-md rounded-3xl border border-amber-100 bg-white/90 p-8 shadow-xl shadow-orange-200/40">
     <div class="space-y-2">
       <p class="text-xs font-semibold uppercase tracking-[0.3em] text-amber-600">Dulce Tentacion</p>
       <h1 class="text-2xl font-semibold text-slate-900">Acceso al panel</h1>
       <p class="text-sm text-slate-600">
-        Esta pantalla es un placeholder. En la Fase 1 conectamos el login real con JWT.
+        Inicia sesion con tu correo y contrasena para acceder a los modulos internos del sistema.
       </p>
     </div>
 
-    <div class="mt-6 space-y-4">
-      <div class="rounded-2xl border border-dashed border-amber-200 bg-amber-50/60 p-4 text-sm text-amber-700">
-        Datos y formulario quedan listos en la siguiente fase.
+    <form class="mt-6 space-y-4" [formGroup]="loginForm" (ngSubmit)="submit()">
+      <div class="space-y-2">
+        <label class="block text-sm font-medium text-slate-700" for="email">Correo</label>
+        <input
+          id="email"
+          type="email"
+          formControlName="email"
+          autocomplete="email"
+          class="w-full rounded-2xl border border-amber-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-100"
+          placeholder="admin@dulce.com"
+        />
+        @if (hasError('email', 'required')) {
+          <p class="text-sm text-rose-600">El correo es obligatorio.</p>
+        }
+        @if (hasError('email', 'email')) {
+          <p class="text-sm text-rose-600">Escribe un correo valido.</p>
+        }
       </div>
-      <a
-        class="inline-flex w-full items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white"
-        routerLink="/dashboard"
+
+      <div class="space-y-2">
+        <label class="block text-sm font-medium text-slate-700" for="password">Contrasena</label>
+        <input
+          id="password"
+          type="password"
+          formControlName="password"
+          autocomplete="current-password"
+          class="w-full rounded-2xl border border-amber-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-amber-400 focus:ring-4 focus:ring-amber-100"
+          placeholder="Minimo 6 caracteres"
+        />
+        @if (hasError('password', 'required')) {
+          <p class="text-sm text-rose-600">La contrasena es obligatoria.</p>
+        }
+        @if (hasError('password', 'minlength')) {
+          <p class="text-sm text-rose-600">La contrasena debe tener al menos 6 caracteres.</p>
+        }
+      </div>
+
+      @if (submitError()) {
+        <div class="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {{ submitError() }}
+        </div>
+      }
+
+      <button
+        type="submit"
+        class="inline-flex w-full items-center justify-center rounded-2xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+        [disabled]="isBusy()"
       >
-        Entrar a demo
+        {{ isBusy() ? 'Ingresando...' : 'Iniciar sesion' }}
+      </button>
+    </form>
+
+    <div class="mt-4 rounded-2xl border border-dashed border-amber-200 bg-amber-50/60 p-4 text-sm text-amber-700">
+      El login ya consume el backend. El dashboard todavia sigue siendo un placeholder mientras construimos el shell y los guards.
+    </div>
+
+    <div class="mt-4">
+      <a class="text-sm font-medium text-slate-600 transition hover:text-slate-900" routerLink="/dashboard">
+        Ir al dashboard placeholder
       </a>
     </div>
   </div>
